@@ -1,11 +1,11 @@
 package dev.claimgui.gui;
 
-import org.bukkit.World;
 import dev.claimgui.manager.ClaimData;
 import dev.claimgui.manager.ClaimManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -13,6 +13,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.ArrayList;
@@ -25,16 +26,20 @@ public class AraziMenu implements Listener {
 
     private final JavaPlugin plugin;
     private final ClaimManager manager;
-    // Oyuncu → açık menüdeki claim listesi (sıra korunuyor)
     private final Map<UUID, List<ClaimData>> openMenus = new HashMap<>();
 
-    private static final String TITLE = "§0§l✦ §8ARAZİLERİM §0§l✦";
+    private static final String TITLE = "§0       ᴀʀᴀᴢɪʟᴇʀɪᴍ";
 
-    // İçerik slotları (kenar hariç iç alan)
+    // !! ARAZI KAFASI URL'İNİ BURAYA YAZ !!
+    // minecraft-heads.com → For Developers → textures.minecraft.net/texture/...
+    private static final String ARAZI_KAFA_URL = "ARAZI_KAFA_URL_BURAYA";
+
+    // İçerik slotları - 4 satır × 7 sütun
     private static final int[] CONTENT_SLOTS = {
             10, 11, 12, 13, 14, 15, 16,
             19, 20, 21, 22, 23, 24, 25,
-            28, 29, 30, 31, 32, 33, 34
+            28, 29, 30, 31, 32, 33, 34,
+            37, 38, 39, 40, 41, 42, 43
     };
 
     public AraziMenu(JavaPlugin plugin, ClaimManager manager) {
@@ -51,27 +56,29 @@ public class AraziMenu implements Listener {
 
         // Kenar - siyah cam
         ItemStack cam = makeItem(Material.BLACK_STAINED_GLASS_PANE, " ", null);
-        for (int i = 0; i < 9; i++)  inv.setItem(i, cam);
+        for (int i = 0; i < 9; i++) inv.setItem(i, cam);
         for (int i = 45; i < 54; i++) inv.setItem(i, cam);
         inv.setItem(9, cam);  inv.setItem(17, cam);
         inv.setItem(18, cam); inv.setItem(26, cam);
         inv.setItem(27, cam); inv.setItem(35, cam);
         inv.setItem(36, cam); inv.setItem(44, cam);
 
-        // Geri ve yenile
-        inv.setItem(45, makeItem(Material.ARROW, "§c§l« §fGERİ DÖN", List.of("§7Ana menüye dön.")));
-        inv.setItem(49, makeItem(Material.NETHER_STAR, "§e§l✦ §fYENİLE", List.of("§7Listeyi yenile.")));
+        // Geri butonu
+        inv.setItem(49, makeItem(Material.BARRIER, "§c§lKAPAT", List.of("§7Menüyü kapat.")));
 
-        // Claim sayısı bilgi
+        // Boşsa bilgi
         if (claims.isEmpty()) {
             inv.setItem(22, makeItem(Material.BARRIER, "§c§lArazi Yok",
                     List.of("", "§7Henüz hiç claim alanın yok.",
                             "§7Altın kürek ile alan belirle.", "")));
+            player.openInventory(inv);
+            return;
         }
 
-        // Dinamik claim slotları
+        // Her claim için kafa
         for (int i = 0; i < claims.size() && i < CONTENT_SLOTS.length; i++) {
             ClaimData c = claims.get(i);
+
             List<String> lore = new ArrayList<>();
             lore.add("");
             lore.add("§8▸ §7Dünya: §a" + c.getWorld());
@@ -82,8 +89,9 @@ public class AraziMenu implements Listener {
             lore.add("§a● Sol Tık §7→ Işınlan");
             lore.add("§c● Sağ Tık §7→ §lSİL");
             lore.add("");
+
             inv.setItem(CONTENT_SLOTS[i],
-                    makeItem(Material.GRASS_BLOCK, "§a§l▸ §fARAZİ #" + (i + 1), lore));
+                    makeSkullFromUrl(ARAZI_KAFA_URL, "§a§l" + (i + 1) + ". §fARAZİ", lore));
         }
 
         player.openInventory(inv);
@@ -98,19 +106,11 @@ public class AraziMenu implements Listener {
         int slot = e.getRawSlot();
         List<ClaimData> claims = openMenus.get(player.getUniqueId());
 
-        // Geri
-        if (slot == 45) {
-            player.closeInventory();
-            Bukkit.getScheduler().runTaskLater(plugin,
-                    () -> MainMenu.open(player, plugin), 1L);
-            return;
-        }
-
-        // Yenile
+        // Kapat
         if (slot == 49) {
             player.closeInventory();
             Bukkit.getScheduler().runTaskLater(plugin,
-                    () -> open(player), 1L);
+                    () -> MainMenu.open(player, plugin), 1L);
             return;
         }
 
@@ -122,39 +122,41 @@ public class AraziMenu implements Listener {
                 if (e.isLeftClick()) {
                     // Işınlan
                     player.closeInventory();
-                    org.bukkit.World world = Bukkit.getWorld(claim.getWorld());
+                    World world = Bukkit.getWorld(claim.getWorld());
                     if (world == null) {
                         player.sendMessage("§c✗ Dünya bulunamadı: " + claim.getWorld());
                         return;
                     }
-                    Location loc = new Location(world, claim.getCenterX(), 100, claim.getCenterZ());
-                    // Y koordinatını yüksekten bul (düşme engeli)
-                    loc.setY(world.getHighestBlockYAt(claim.getCenterX(), claim.getCenterZ()) + 1);
-                    player.teleport(loc);
-                    player.sendMessage("§a✔ §f" + claim.getWorld() + " §7→ §eX:" + claim.getCenterX() + " Z:" + claim.getCenterZ());
+                    int y = world.getHighestBlockYAt(claim.getCenterX(), claim.getCenterZ()) + 1;
+                    player.teleport(new Location(world, claim.getCenterX(), y, claim.getCenterZ()));
+                    player.sendMessage("§a✔ §e" + claim.getWorld()
+                            + " §7→ X:" + claim.getCenterX() + " Z:" + claim.getCenterZ());
 
                 } else if (e.isRightClick()) {
-                    // Sil - önce onay sor
+                    // Sil - onay sor
                     player.closeInventory();
                     player.sendMessage("§c§l⚠ §fBu araziyi silmek istediğine emin misin?");
-                    player.sendMessage("§7Arazi: §e" + claim.getWorld() + " X:" + claim.getCenterX() + " Z:" + claim.getCenterZ());
-                    player.sendMessage("§7Onaylamak için §c§lonay §7yaz, iptal için §aiptal§7.");
+                    player.sendMessage("§7" + claim.getWorld()
+                            + " X:" + claim.getCenterX() + " Z:" + claim.getCenterZ());
+                    player.sendMessage("§7Onaylamak için §c§lonay §7yaz.");
 
                     dev.claimgui.listener.ChatInputListener.get().await(player,
-                            "Silmek için 'onay' yaz:", input -> {
+                            "Silmek için 'onay' yaz:",
+                            input -> {
                                 if (input.equalsIgnoreCase("onay")) {
-                                    // GP'nin deleteclaim komutu oyuncu o claimde durmalı
-                                    // O yüzden önce ışınlayıp sonra komutu çalıştırıyoruz
                                     World w = Bukkit.getWorld(claim.getWorld());
                                     if (w != null) {
-                                        Location l = new Location(w, claim.getCenterX(),
-                                                w.getHighestBlockYAt(claim.getCenterX(), claim.getCenterZ()) + 1,
-                                                claim.getCenterZ());
-                                        player.teleport(l);
+                                        int y = w.getHighestBlockYAt(
+                                                claim.getCenterX(), claim.getCenterZ()) + 1;
+                                        player.teleport(new Location(w,
+                                                claim.getCenterX(), y, claim.getCenterZ()));
                                     }
                                     Bukkit.getScheduler().runTaskLater(plugin, () -> {
                                         player.performCommand("deleteclaim");
                                         player.sendMessage("§a✔ Arazi silindi.");
+                                        Bukkit.getScheduler().runTaskLaterAsynchronously(plugin,
+                                                () -> dev.claimgui.Main.getInstance()
+                                                        .getClaimManager().loadAll(), 20L);
                                     }, 10L);
                                 } else {
                                     player.sendMessage("§a✔ İptal edildi.");
@@ -166,7 +168,7 @@ public class AraziMenu implements Listener {
         }
     }
 
-    private ItemStack makeItem(Material mat, String name, List<String> lore) {
+    private static ItemStack makeItem(Material mat, String name, List<String> lore) {
         ItemStack item = new ItemStack(mat);
         ItemMeta meta = item.getItemMeta();
         if (meta == null) return item;
@@ -174,5 +176,31 @@ public class AraziMenu implements Listener {
         if (lore != null) meta.setLore(lore);
         item.setItemMeta(meta);
         return item;
+    }
+
+    private static ItemStack makeSkullFromUrl(String url, String name, List<String> lore) {
+        ItemStack skull = new ItemStack(Material.PLAYER_HEAD);
+        SkullMeta meta = (SkullMeta) skull.getItemMeta();
+        if (meta == null) return skull;
+
+        if (!url.contains("BURAYA") && !url.isEmpty()) {
+            try {
+                String texture = java.util.Base64.getEncoder().encodeToString(
+                        ("{\"textures\":{\"SKIN\":{\"url\":\"" + url + "\"}}}").getBytes()
+                );
+                com.mojang.authlib.GameProfile profile =
+                        new com.mojang.authlib.GameProfile(UUID.randomUUID(), null);
+                profile.getProperties().put("textures",
+                        new com.mojang.authlib.properties.Property("textures", texture));
+                java.lang.reflect.Field f = meta.getClass().getDeclaredField("profile");
+                f.setAccessible(true);
+                f.set(meta, profile);
+            } catch (Exception ignored) {}
+        }
+
+        meta.setDisplayName(name);
+        if (lore != null) meta.setLore(lore);
+        skull.setItemMeta(meta);
+        return skull;
     }
 }
