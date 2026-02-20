@@ -15,30 +15,25 @@ public class Main extends JavaPlugin {
 
     private static Main instance;
     private ClaimManager claimManager;
-    private AraziMenu araziMenu;
-    private YetkiliMenu yetkiliMenu;
-    private MainMenu mainMenu;
 
     @Override
     public void onEnable() {
         instance = this;
 
         if (!Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
-            getLogger().severe("PlaceholderAPI bulunamadı! Plugin devre dışı kalıyor.");
+            getLogger().severe("PlaceholderAPI bulunamadı! Plugin devre dışı.");
             Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
 
-        // Manager ve listener'lar
         claimManager = new ClaimManager(this);
         new ChatInputListener(this);
 
-        // GUI'ler
-        araziMenu  = new AraziMenu(this, claimManager);
-        yetkiliMenu = new YetkiliMenu(this, claimManager);
-        mainMenu   = new MainMenu(this, araziMenu, yetkiliMenu);
+        AraziMenu araziMenu    = new AraziMenu(this, claimManager);
+        YetkiliMenu yetkiliMenu = new YetkiliMenu(this, claimManager);
+        new MainMenu(this, araziMenu, yetkiliMenu);
 
-        // Claim verilerini async yükle
+        // Async yükle
         Bukkit.getScheduler().runTaskAsynchronously(this, claimManager::loadAll);
 
         // Her 5 dakikada otomatik yenile
@@ -62,48 +57,6 @@ public class Main extends JavaPlugin {
 
         switch (cmd.getName().toLowerCase()) {
             case "claim-gui" -> MainMenu.open(player, this);
-
-            case "claimgonder_ac" -> {
-                ChatInputListener.get().await(player,
-                        "Bloğu göndermek istediğin oyuncunun adını yaz:",
-                        targetName -> ChatInputListener.get().await(player,
-                                "Kaç blok göndermek istiyorsun?",
-                                amountStr -> {
-                                    try {
-                                        int amount = Integer.parseInt(amountStr);
-                                        if (amount <= 0) throw new NumberFormatException();
-                                        player.performCommand("giveclaimblocks " + targetName + " " + amount);
-                                        player.sendMessage("§a✔ §e" + amount + " §7blok §f" + targetName + " §7kişisine gönderildi.");
-                                    } catch (NumberFormatException e) {
-                                        player.sendMessage("§c✗ Geçersiz miktar.");
-                                    }
-                                }));
-            }
-
-            case "claimal_ac" -> {
-                ChatInputListener.get().await(player,
-                        "Kaç claim bloğu satın almak istiyorsun?",
-                        amountStr -> {
-                            try {
-                                int amount = Integer.parseInt(amountStr);
-                                if (amount <= 0) throw new NumberFormatException();
-                                player.performCommand("buyclaimblocks " + amount);
-                            } catch (NumberFormatException e) {
-                                player.sendMessage("§c✗ Geçersiz miktar.");
-                            }
-                        });
-            }
-
-            case "claimtrust_ac" -> {
-                ChatInputListener.get().await(player,
-                        "Yetkili vermek istediğin oyuncunun adını yaz:",
-                        targetName -> {
-                            player.performCommand("trust " + targetName);
-                            Bukkit.getScheduler().runTaskLaterAsynchronously(
-                                    this, claimManager::loadAll, 40L);
-                        });
-            }
-
             case "gpclaim-reload" -> {
                 if (!player.hasPermission("claim.admin")) {
                     player.sendMessage("§cYetersiz izin.");
