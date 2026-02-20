@@ -1,5 +1,6 @@
 package dev.claimgui.gui;
 
+import org.bukkit.World;
 import dev.claimgui.manager.ClaimData;
 import dev.claimgui.manager.ClaimManager;
 import org.bukkit.Bukkit;
