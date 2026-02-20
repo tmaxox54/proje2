@@ -45,7 +45,7 @@ public class MainMenu implements Listener {
         // Slot 10 - Claim Bilgileri (SARI KAFA)
         // !! URL'yi buraya yaz: https://textures.minecraft.net/texture/XXXXX
         inv.setItem(10, makeSkullFromUrl(
-                "SARI_KAFA_URL_BURAYA",
+                "http://textures.minecraft.net/texture/fed3e1372d62078f9404d87f05381311dd87072873120d4715e6335d5bf7ec4f",
                 "§6§lCLAIM BİLGİLERİ",
                 List.of("",
                         "§8▸ §7Toplam Blok:   §e§l" + total,
@@ -67,7 +67,7 @@ public class MainMenu implements Listener {
         // Slot 15 - Yetkililer (MAVİ KAFA)
         // !! URL'yi buraya yaz: https://textures.minecraft.net/texture/XXXXX
         inv.setItem(15, makeSkullFromUrl(
-                "MAVI_KAFA_URL_BURAYA",
+                "http://textures.minecraft.net/texture/cf3d4459f30f532e9b73b0cc3c6f3a10c20b3e68f1af3f49d2efe124cafcd222",
                 "§b§lYETKİLİLER",
                 List.of("",
                         "§7Claimindeki yetkilileri yönet.",
