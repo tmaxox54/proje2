@@ -20,10 +20,10 @@ public class ClaimManager {
         ownerClaims.clear();
 
         File claimDir = new File(plugin.getDataFolder().getParentFile(),
-                "GriefPrevention/ClaimData");
+                "GriefPreventionData/ClaimData");
 
         if (!claimDir.exists() || !claimDir.isDirectory()) {
-            plugin.getLogger().warning("GriefPrevention/ClaimData klasörü bulunamadı!");
+            plugin.getLogger().warning("GriefPreventionData/ClaimData klasörü bulunamadı!");
             return;
         }
 
